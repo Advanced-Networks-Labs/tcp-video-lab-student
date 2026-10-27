@@ -38,10 +38,7 @@ def run_server():
             total_bytes += HEADER_SIZE + payload_length
 
             # TODO 6: Calculate and log performance metrics (Latency, FPS, Throughput KB/s)
-            # current_time = time.time()
-            # latency_ms = (current_time * 1000) - send_ts_ms
-            # fps = frame_count / (current_time - start_time)
-            # throughput_kbps = (total_bytes / 1024) / (current_time - start_time)
+           
             raise NotImplementedError("TODO 6: Implement performance measurement metrics")
 
             np_arr = np.frombuffer(frame_bytes, dtype=np.uint8)
