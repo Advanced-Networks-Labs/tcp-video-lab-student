@@ -9,7 +9,13 @@ HEADER_SIZE = 16  # 4 bytes length + 4 bytes frame_id + 8 bytes timestamp
 
 def recv_exact(sock, n):
     """TODO 6: Implement a robust helper to read exactly n bytes from the TCP stream."""
-    pass
+    data = bytearray()
+    while len(data) < n:
+        packet = sock.recv(n - len(data))
+        if not packet:
+            return None
+        data.extend(packet)
+    return bytes(data)
 
 def run_server():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -31,19 +37,32 @@ def run_server():
                 break
 
             # TODO 7: Unpack payload length, frame ID, and send timestamp using struct.unpack
-            
-            raise NotImplementedError("TODO 6 & 7: Implement exact byte reading and header unpacking")
+            payload_length, frame_id, send_timestamp = struct.unpack("!IIQ", header_bytes)
 
             frame_bytes = recv_exact(conn, payload_length)
+            if not frame_bytes:
+                break
             total_bytes += HEADER_SIZE + payload_length
 
             # TODO 6: Calculate and log performance metrics (Latency, FPS, Throughput KB/s)
-           
-            raise NotImplementedError("TODO 6: Implement performance measurement metrics")
+            current_time = time.time()
+            latency = (current_time * 1000) - (send_timestamp / 1000.0) 
+            
+            elapsed_time = current_time - start_time
+            fps = frame_count / elapsed_time if elapsed_time > 0 else 0
+            throughput = (total_bytes / 1024) / elapsed_time if elapsed_time > 0 else 0
+
+            print(f"Frame {frame_id}: Latency={latency:.2f}ms, FPS={fps:.2f}, Throughput={throughput:.2f} KB/s")
 
             np_arr = np.frombuffer(frame_bytes, dtype=np.uint8)
             frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
             frame_count += 1
+            
+            
+            if frame is not None:
+                cv2.imshow("Video Stream", frame)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
 
     finally:
         conn.close()
