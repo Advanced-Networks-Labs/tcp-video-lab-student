@@ -9,7 +9,13 @@ HEADER_SIZE = 16  # 4 bytes length + 4 bytes frame_id + 8 bytes timestamp
 
 def recv_exact(sock, n):
     """TODO 6: Implement a robust helper to read exactly n bytes from the TCP stream."""
-    pass
+    data = bytearray()
+    while len(data) < n:
+        packet = sock.recv(n - len(data))
+        if not packet:
+            return None
+        data.extend(packet)
+    return bytes(data)
 
 def run_server():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -26,22 +32,38 @@ def run_server():
 
     try:
         while True:
+            # TODO 7: Unpack payload length, frame ID, and send timestamp using struct.unpack
+           
+           ##
+
             header_bytes = recv_exact(conn, HEADER_SIZE)
             if not header_bytes:
                 break
 
-            # TODO 7: Unpack payload length, frame ID, and send timestamp using struct.unpack
+            payload_length, frame_id, timestamp = struct.unpack("!I I Q", header_bytes)
+
+            payload = recv_exact(conn, payload_length)
+            if not payload:
+                break
+            ##
             
-            raise NotImplementedError("TODO 6 & 7: Implement exact byte reading and header unpacking")
+          
+          # TODO 6: Calculate and log performance metrics (Latency, FPS, Throughput KB/s)
+        
+        ##
 
-            frame_bytes = recv_exact(conn, payload_length)
-            total_bytes += HEADER_SIZE + payload_length
+            total_bytes += payload_length
+            current_time = int(time.time() * 1000)
+            latency = current_time - timestamp
 
-            # TODO 6: Calculate and log performance metrics (Latency, FPS, Throughput KB/s)
-           
-            raise NotImplementedError("TODO 6: Implement performance measurement metrics")
-
-            np_arr = np.frombuffer(frame_bytes, dtype=np.uint8)
+            elapsed_time = time.time() - start_time
+            fps = frame_count / elapsed_time if elapsed_time > 0 else 0
+            throughput_kbps = (total_bytes / 1024) / elapsed_time if elapsed_time > 0 else 0
+            
+          
+            print(f"Frame ID: {frame_id} | Size: {payload_length} bytes | Latency: {latency} ms | FPS: {fps:.2f} | Throughput: {throughput_kbps:.2f} KB/s")
+          
+            np_arr = np.frombuffer(payload, dtype=np.uint8)
             frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
             frame_count += 1
 
@@ -49,6 +71,8 @@ def run_server():
         conn.close()
         server_socket.close()
         cv2.destroyAllWindows()
+
+        ##
 
 if __name__ == '__main__':
     run_server()
