@@ -20,9 +20,9 @@ def run_server():
     print(f"Server listening on port {PORT}...")
     conn, addr = server_socket.accept()
     
-    frame_count = 0
-    total_bytes = 0
-    start_time = time.time()
+    frame_count = 0                                   
+    total_bytes = 0                                   
+    start_time = time.time()                          
 
     try:
         while True:
@@ -31,15 +31,23 @@ def run_server():
                 break
 
             # TODO 7: Unpack payload length, frame ID, and send timestamp using struct.unpack
+            payload_length, frame_id, timestamp = struct.unpack ("IIQ",header_bytes)
             
-            raise NotImplementedError("TODO 6 & 7: Implement exact byte reading and header unpacking")
+            
 
             frame_bytes = recv_exact(conn, payload_length)
             total_bytes += HEADER_SIZE + payload_length
 
             # TODO 6: Calculate and log performance metrics (Latency, FPS, Throughput KB/s)
-           
-            raise NotImplementedError("TODO 6: Implement performance measurement metrics")
+            timesec = time.time() - start_time
+            throughput = (total_bytes / 1024) / timesec
+
+            fps = (frame_count + 1) / timesec
+
+            recv_time = time.time () * 1000
+            latency = recv_time - timestamp
+
+            print(f"FRAME {frame_id} | LATENCY : {latency} ms | FPS : {fps} | THROUGHPUT : {throughput} KB/s")
 
             np_arr = np.frombuffer(frame_bytes, dtype=np.uint8)
             frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
