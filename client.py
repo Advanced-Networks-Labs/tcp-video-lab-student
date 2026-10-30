@@ -2,12 +2,17 @@ import cv2
 import socket
 import struct
 import time
+import numpy as np
 
 SERVER_IP = '127.0.0.1'
 PORT = 8080
 
 def make_test_video(VIDEO_PATH):
     # TODO 1: Dedine variables to build a 5-second video with 320*240 frames.
+    FPS = 30
+    SECONDS = 5
+    W = 320
+    H = 240
     
     writer = cv2.VideoWriter(VIDEO_PATH, cv2.VideoWriter_fourcc(*"mp4v"), FPS, (W, H))
     for i in range(FPS * SECONDS):
@@ -20,6 +25,8 @@ def make_test_video(VIDEO_PATH):
 
 def run_client():
     # TODO 2: Prepare the test video indicated by a specific video path.
+    VIDEO_PATH = "test_video.mp4"
+    make_test_video(VIDEO_PATH)
   
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect((SERVER_IP, PORT))
@@ -43,18 +50,19 @@ def run_client():
             payload_length = len(payload)
             
             # TODO 3: Capture high-resolution timestamp for latency tracking
+            send_timestamp = time.time()
           
             
             # TODO 4: Construct fixed-size header (e.g., 4 bytes length, 4 bytes frame_id, 8 bytes timestamp in milliseconds) that is prefixing the video frame payload using struct.pack()
+        header = struct.pack("!IId",payload_length,frame_id,Send_timestamp)
            
-            raise NotImplementedError("TODO 3 & 4: Implement header packing and timestamping")
-
             # TODO 5: Transmit header + payload securely using socket.sendall()
+        client_socket.sendall(header + payload)
         
-            raise NotImplementedError("TODO 5: Implement socket transmission")
+           
 
-            frame_id += 1
-            time.sleep(0.03)  # Frame pacing (~30 FPS)
+        frame_id += 1
+        time.sleep(0.03)  # Frame pacing (~30 FPS)
 
     finally:
         cap.release()
