@@ -9,7 +9,17 @@ HEADER_SIZE = 16  # 4 bytes length + 4 bytes frame_id + 8 bytes timestamp
 
 def recv_exact(sock, n):
     """TODO 6: Implement a robust helper to read exactly n bytes from the TCP stream."""
-    pass
+    data = b''
+
+    while len(data) < n:
+        packet = sock.recv(n - len(data))
+
+        if not packet:
+            return None
+
+        data += packet
+
+    return data
 
 def run_server():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -32,14 +42,31 @@ def run_server():
 
             # TODO 7: Unpack payload length, frame ID, and send timestamp using struct.unpack
             
-            raise NotImplementedError("TODO 6 & 7: Implement exact byte reading and header unpacking")
-
+            payload_length, frame_id, timestamp = struct.unpack('!IIQ', header_bytes)
+            
             frame_bytes = recv_exact(conn, payload_length)
             total_bytes += HEADER_SIZE + payload_length
 
             # TODO 6: Calculate and log performance metrics (Latency, FPS, Throughput KB/s)
            
-            raise NotImplementedError("TODO 6: Implement performance measurement metrics")
+            current_time = time.time()
+            latency = (time.time_ns() // 1_000_000) - timestamp
+
+            elapsed_time = current_time - start_time
+
+            fps = frame_count / elapsed_time if elapsed_time > 0 else 0
+
+            throughput = (
+                total_bytes / 1024 / elapsed_time
+                if elapsed_time > 0 else 0
+            )
+
+            print(
+                f"Frame ID: {frame_id} | "
+                f"Latency: {latency} ms | "
+                f"FPS: {fps:.2f} | "
+                f"Throughput: {throughput:.2f} KB/s"
+            )
 
             np_arr = np.frombuffer(frame_bytes, dtype=np.uint8)
             frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
