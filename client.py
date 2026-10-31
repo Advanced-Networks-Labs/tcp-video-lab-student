@@ -43,7 +43,7 @@ def run_client():
             payload_length = len(payload)
             
             # TODO 3: Capture high-resolution timestamp for latency tracking
-          
+          timestamp = int(time.time() * 1000)
             
             # TODO 4: Construct fixed-size header (e.g., 4 bytes length, 4 bytes frame_id, 8 bytes timestamp in milliseconds) that is prefixing the video frame payload using struct.pack()
            
