@@ -1,4 +1,6 @@
+
 import cv2
+import numpy as np
 import socket
 import struct
 import time
@@ -6,59 +8,120 @@ import time
 SERVER_IP = '127.0.0.1'
 PORT = 8080
 
+# Video settings
+FPS = 30
+SECONDS = 5
+W = 320
+H = 240
+
+VIDEO_PATH = "test_video.mp4"
+
+
 def make_test_video(VIDEO_PATH):
-    # TODO 1: Dedine variables to build a 5-second video with 320*240 frames.
-    
-    writer = cv2.VideoWriter(VIDEO_PATH, cv2.VideoWriter_fourcc(*"mp4v"), FPS, (W, H))
+    # TODO 1: Define variables to build a 5-second video
+    # with 320x240 frames.
+
+    writer = cv2.VideoWriter(
+        VIDEO_PATH,
+        cv2.VideoWriter_fourcc(*"mp4v"),
+        FPS,
+        (W, H)
+    )
+
     for i in range(FPS * SECONDS):
-        frame = np.full((H, W, 3), (i * 3) % 255, dtype=np.uint8)
-        cv2.putText(frame, f"frame {i}", (60, 125), cv2.FONT_HERSHEY_SIMPLEX,
-                1, (255, 255, 255), 2)
+        frame = np.full(
+            (H, W, 3),
+            (i * 3) % 255,
+            dtype=np.uint8
+        )
+
+        cv2.putText(
+            frame,
+            f"frame {i}",
+            (60, 125),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1,
+            (255, 255, 255),
+            2
+        )
+
         writer.write(frame)
+
     writer.release()
     print(f"Wrote {VIDEO_PATH}")
 
+
 def run_client():
-    # TODO 2: Prepare the test video indicated by a specific video path.
-  
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    # TODO 2: Prepare the test video
+    make_test_video(VIDEO_PATH)
+
+    client_socket = socket.socket(
+        socket.AF_INET,
+        socket.SOCK_STREAM
+    )
+
     client_socket.connect((SERVER_IP, PORT))
+
     print(f"Connected to server at {SERVER_IP}:{PORT}")
 
     cap = cv2.VideoCapture(VIDEO_PATH)
     frame_id = 0
-    
+
     try:
         while cap.isOpened():
+
             ret, frame = cap.read()
+
             if not ret:
                 break
 
             frame = cv2.resize(frame, (640, 480))
-            success, encoded_image = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), 60])
+
+            success, encoded_image = cv2.imencode(
+                '.jpg',
+                frame,
+                [int(cv2.IMWRITE_JPEG_QUALITY), 60]
+            )
+
             if not success:
                 continue
 
             payload = encoded_image.tobytes()
             payload_length = len(payload)
-            
-            # TODO 3: Capture high-resolution timestamp for latency tracking
-          
-            
-            # TODO 4: Construct fixed-size header (e.g., 4 bytes length, 4 bytes frame_id, 8 bytes timestamp in milliseconds) that is prefixing the video frame payload using struct.pack()
-           
-            raise NotImplementedError("TODO 3 & 4: Implement header packing and timestamping")
 
-            # TODO 5: Transmit header + payload securely using socket.sendall()
-        
-            raise NotImplementedError("TODO 5: Implement socket transmission")
+            # TODO 3: Capture a high-resolution timestamp
+            timestamp_ms = time.time_ns() // 1_000_000
+
+            # TODO 4: Construct a fixed-size header
+            header = struct.pack(
+                '!IIQ',
+                payload_length,
+                frame_id,
+                timestamp_ms
+            )
+
+            # TODO 5: Transmit header + payload
+            client_socket.sendall(header + payload)
+
+            print(
+                f"Sent frame {frame_id}, "
+                f"size={payload_length} bytes, "
+                f"timestamp={timestamp_ms} ms"
+            )
 
             frame_id += 1
-            time.sleep(0.03)  # Frame pacing (~30 FPS)
+
+            time.sleep(0.03)
+
+    except (ConnectionError, OSError) as error:
+        print(f"Network error: {error}")
 
     finally:
         cap.release()
         client_socket.close()
+        print("Client connection closed.")
+
 
 if __name__ == '__main__':
     run_client()
